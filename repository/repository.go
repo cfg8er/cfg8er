@@ -8,10 +8,8 @@ import (
 	"gopkg.in/src-d/go-git.v4/storage/memory"
 )
 
-// Repository is a go-git Repository
-type Repository struct {
-	r *git.Repository
-}
+// Repository is an extended go-git Repository
+type Repository struct{ *git.Repository }
 
 // Clone downloads the repository
 func Clone(path string) (Repository, error) {
@@ -27,12 +25,12 @@ func Clone(path string) (Repository, error) {
 	if err != nil {
 		return Repository{}, err
 	}
-	return Repository{r: repo}, nil
+	return Repository{repo}, nil
 }
 
 //FileOpen opens a given path within the repository's worktree
 func (r *Repository) FileOpen(path string) (billy.File, error) {
-	wt, err := r.r.Worktree()
+	wt, err := r.Worktree()
 	if err != nil {
 		return nil, err
 	}
