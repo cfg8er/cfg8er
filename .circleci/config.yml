@@ -1,0 +1,57 @@
+version: 2
+workflows:
+  build_and_test:
+    jobs:
+      - clean-code
+      - test:
+          requires:
+            - clean-code
+      - race:
+          requires:
+            - clean-code
+
+jobs:
+  clean-code:
+    docker:
+      - image: circleci/golang:latest
+    working_directory: /go/src/github.com/cfg8er/pkg
+    steps:
+      - checkout
+      - run:
+          name: Install vgo
+          command: go get -u golang.org/x/vgo
+      - run:
+          name: Check vendored dependencies
+          command: vgo verify
+      - run:
+          name: go tool vet
+          command: |
+            go tool vet deploy repository
+      - run:
+          name: gofmt
+          command: test -z $(gofmt -s -l deploy repository)
+  test:
+    docker:
+      - image: circleci/golang:latest
+    working_directory: /go/src/github.com/cfg8er/pkg
+    environment:
+      - CGO_ENABLED: 0
+    steps:
+      - checkout
+      - run:
+          name: Test all
+          command: go test -a -ldflags '-s' ./...
+      - run:
+          name: Test coverage
+          command: go test -cover ./...
+  race:
+    docker:
+      - image: circleci/golang:latest
+    working_directory: /go/src/github.com/cfg8er/pkg
+    environment:
+      - CGO_ENABLED: 1
+    steps:
+      - checkout
+      - run:
+          name: Race detector
+          command: go test -race ./...
