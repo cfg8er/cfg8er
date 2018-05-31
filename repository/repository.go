@@ -1,8 +1,9 @@
 package repository
 
 import (
-	billy "gopkg.in/src-d/go-billy.v4"
-	"gopkg.in/src-d/go-billy.v4/memfs"
+	"fmt"
+	"io"
+
 	git "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/storage/memory"
@@ -11,16 +12,14 @@ import (
 // Repository is an extended go-git Repository
 type Repository struct{ *git.Repository }
 
-// Clone downloads the repository
-func Clone(path string) (Repository, error) {
-	// Filesystem abstraction based on memory
-	fs := memfs.New()
+// CloneBare downloads the repository as a bare repo
+func CloneBare(URL string) (Repository, error) {
 	// Git objects storer based on memory
 	storer := memory.NewStorage()
 	// Clones the repository into the worktree (fs) and storer all the .git
 	// content into the storer
-	repo, err := git.Clone(storer, fs, &git.CloneOptions{
-		URL: path,
+	repo, err := git.Clone(storer, nil, &git.CloneOptions{
+		URL: URL,
 	})
 	if err != nil {
 		return Repository{}, err
@@ -28,20 +27,35 @@ func Clone(path string) (Repository, error) {
 	return Repository{repo}, nil
 }
 
-//FileOpen opens a given path within the repository's worktree
-func (r *Repository) FileOpen(path string) (billy.File, error) {
-	wt, err := r.Worktree()
+//FileOpenAtRef opens a file at a given path at a given reference
+func (r *Repository) FileOpenAtRef(path string, refName plumbing.ReferenceName) (io.ReadCloser, error) {
+	ref, err := r.Reference(refName, true)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("refName Lookup of %s: %s", refName, err)
 	}
 
-	fs := wt.Filesystem
-	file, err := fs.Open(path)
+	commit, err := r.CommitObject(ref.Hash())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Commit object lookup of %v: %s", ref.Hash(), err)
 	}
 
-	return file, nil
+	tree, err := commit.Tree()
+	if err != nil {
+		return nil, fmt.Errorf("Get tree of commit %v: %s", commit.TreeHash, err)
+	}
+
+	te, err := tree.FindEntry(path)
+	if err != nil {
+		return nil, fmt.Errorf("Find path in tree %s: %s", path, err)
+	}
+
+	o, err := r.BlobObject(te.Hash)
+	if err != nil {
+		return nil, fmt.Errorf("Blob object lookup of %v: %s", te.Hash, err)
+
+	}
+
+	return o.Reader()
 }
 
 // Fetch downloads the latest commits to a repository

@@ -114,7 +114,6 @@
     ".",
     "helper/chroot",
     "helper/polyfill",
-    "memfs",
     "osfs",
     "util"
   ]
@@ -177,6 +176,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "608853d01261ea7098737d6af229ead086f21014d61d742a5e681104d6267af1"
+  inputs-digest = "2fe55453445f5d48606b45f3fb9679585156d73284552ebdad76969ddffcc946"
   solver-name = "gps-cdcl"
   solver-version = 1
