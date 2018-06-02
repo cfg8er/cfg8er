@@ -96,3 +96,63 @@ func TestRepository_FileOpenAtRef(t *testing.T) {
 		})
 	}
 }
+
+func TestRepository_FileOpenAtCommit(t *testing.T) {
+	r, err := CloneBare(exampleRepo)
+
+	if err != nil {
+		t.Errorf("Repository.FileOpenAtCommit() error = %v", err)
+		return
+	}
+
+	type args struct {
+		path string
+		hash plumbing.Hash
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []byte
+		wantErr bool
+	}{
+		{
+			name:    "Open and read CHANGELOG at 6ecf0ef2c2dffb796033e5a02219af86ec6584e5",
+			args:    args{path: "CHANGELOG", hash: plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")},
+			want:    []byte("Initial changelog\n"),
+			wantErr: false,
+		},
+		{
+			name:    "Open and read CHANGELOG at a remote branch commit e8d3ffab552895c19b9fcf7aa264d277cde33881",
+			args:    args{path: "CHANGELOG", hash: plumbing.NewHash("e8d3ffab552895c19b9fcf7aa264d277cde33881")},
+			want:    []byte("Initial changelog\n"),
+			wantErr: false,
+		},
+		{
+			name: "Open and read vendor/foo.go at 6ecf0ef2c2dffb796033e5a02219af86ec6584e5",
+			args: args{path: "vendor/foo.go", hash: plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")},
+			want: []byte("package main\n\nimport \"fmt\"\n\nfunc main() {\n	fmt.Println(\"Hello, playground\")\n}\n"),
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := r.FileOpenAtCommit(tt.args.path, tt.args.hash)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Repository.FileOpenAtCommit() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			defer got.Close()
+
+			gotContents, err := ioutil.ReadAll(got)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Repository.FileOpenAtCommit() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !bytes.Equal(gotContents, tt.want) {
+				t.Errorf("Repository.FileOpenAtCommit() = %v, want %v", gotContents, tt.want)
+			}
+
+		})
+	}
+}
