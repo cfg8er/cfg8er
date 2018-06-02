@@ -37,17 +37,17 @@ func TestCloneBare(t *testing.T) {
 	}
 }
 
-func TestRepository_FileOpenAtRef(t *testing.T) {
+func TestRepository_FileOpenAtRev(t *testing.T) {
 	r, err := CloneBare(exampleRepo)
 
 	if err != nil {
-		t.Errorf("Repository.FileOpenAtRef() error = %v", err)
+		t.Errorf("Repository.FileOpenAtRev() error = %v", err)
 		return
 	}
 
 	type args struct {
-		path    string
-		refName plumbing.ReferenceName
+		path string
+		rev  plumbing.Revision
 	}
 	tests := []struct {
 		name    string
@@ -56,41 +56,63 @@ func TestRepository_FileOpenAtRef(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "Open and read CHANGELOG at master",
-			args:    args{path: "CHANGELOG", refName: "refs/heads/master"},
+			name:    "Reference not found",
+			args:    args{path: "CHANGELOG", rev: plumbing.Revision("asdf1234")},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "Open and read CHANGELOG at refs/heads/master",
+			args:    args{path: "CHANGELOG", rev: plumbing.Revision("refs/heads/master")},
 			want:    []byte("Initial changelog\n"),
 			wantErr: false,
 		},
 		{
-			name:    "Open and read CHANGELOG at a remote branch",
-			args:    args{path: "CHANGELOG", refName: "refs/remotes/origin/branch"},
+			name:    "Open and read CHANGELOG at refs/remotes/origin/branch",
+			args:    args{path: "CHANGELOG", rev: plumbing.Revision("refs/remotes/origin/branch")},
 			want:    []byte("Initial changelog\n"),
 			wantErr: false,
 		},
 		{
-			name: "Open and read vendor/foo.go at master",
-			args: args{path: "vendor/foo.go", refName: "refs/heads/master"},
+			name: "Open and read vendor/foo.go at refs/heads/master",
+			args: args{path: "vendor/foo.go", rev: plumbing.Revision("refs/heads/master")},
 			want: []byte("package main\n\nimport \"fmt\"\n\nfunc main() {\n	fmt.Println(\"Hello, playground\")\n}\n"),
+			wantErr: false,
+		},
+		{
+			name:    "Open and read CHANGELOG at 6ecf0ef2c2dffb796033e5a02219af86ec6584e5",
+			args:    args{path: "CHANGELOG", rev: plumbing.Revision("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")},
+			want:    []byte("Initial changelog\n"),
+			wantErr: false,
+		},
+		{
+			name:    "Open and read CHANGELOG at short ref master",
+			args:    args{path: "CHANGELOG", rev: plumbing.Revision("master")},
+			want:    []byte("Initial changelog\n"),
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := r.FileOpenAtRef(tt.args.path, tt.args.refName)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Repository.FileOpenAtRef() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := r.FileOpenAtRev(tt.args.path, tt.args.rev)
+
+			if err != nil {
+				if !tt.wantErr {
+					t.Errorf("Repository.FileOpenAtRev() error = %v, wantErr %v", err, tt.wantErr)
+					return
+				}
 				return
 			}
 			defer got.Close()
 
 			gotContents, err := ioutil.ReadAll(got)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Repository.FileOpenAtRef() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Repository.FileOpenAtRev() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			if !bytes.Equal(gotContents, tt.want) {
-				t.Errorf("Repository.FileOpenAtRef() = %v, want %v", gotContents, tt.want)
+				t.Errorf("Repository.FileOpenAtRev() = %v, want %v", gotContents, tt.want)
 			}
 
 		})
@@ -116,6 +138,12 @@ func TestRepository_FileOpenAtCommit(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name:    "Non-existent commit hash",
+			args:    args{path: "CHANGELOG", hash: plumbing.NewHash("0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f")},
+			want:    nil,
+			wantErr: true,
+		},
+		{
 			name:    "Open and read CHANGELOG at 6ecf0ef2c2dffb796033e5a02219af86ec6584e5",
 			args:    args{path: "CHANGELOG", hash: plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")},
 			want:    []byte("Initial changelog\n"),
@@ -137,8 +165,11 @@ func TestRepository_FileOpenAtCommit(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := r.FileOpenAtCommit(tt.args.path, tt.args.hash)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Repository.FileOpenAtCommit() error = %v, wantErr %v", err, tt.wantErr)
+			if err != nil {
+				if !tt.wantErr {
+					t.Errorf("Repository.FileOpenAtCommit() error = %v, wantErr %v", err, tt.wantErr)
+					return
+				}
 				return
 			}
 			defer got.Close()

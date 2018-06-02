@@ -16,8 +16,7 @@ type Repository struct{ *git.Repository }
 func CloneBare(URL string) (Repository, error) {
 	// Git objects storer based on memory
 	storer := memory.NewStorage()
-	// Clones the repository into the worktree (fs) and storer all the .git
-	// content into the storer
+
 	repo, err := git.Clone(storer, nil, &git.CloneOptions{
 		URL: URL,
 	})
@@ -27,35 +26,36 @@ func CloneBare(URL string) (Repository, error) {
 	return Repository{repo}, nil
 }
 
-//FileOpenAtRef opens a file at a given path at a given reference
-func (r *Repository) FileOpenAtRef(path string, refName plumbing.ReferenceName) (io.ReadCloser, error) {
-	ref, err := r.Reference(refName, true)
+// FileOpenAtRev opens a file at a given path at a given Git revision, eg.
+// https://kernel.org/pub/software/scm/git/docs/gitrevisions.html
+func (r *Repository) FileOpenAtRev(path string, rev plumbing.Revision) (io.ReadCloser, error) {
+	ref, err := r.ResolveRevision(rev)
 	if err != nil {
-		return nil, fmt.Errorf("refName Lookup of %s: %s", refName, err)
+		return nil, fmt.Errorf("Revision resolve of %s: %s", ref, err)
 	}
-	return r.FileOpenAtCommit(path, ref.Hash())
+	return r.FileOpenAtCommit(path, *ref)
 }
 
-//FileOpenAtCommit opens a file at a given path at a given commit hash
+// FileOpenAtCommit opens a file at a given path at a given commit hash
 func (r *Repository) FileOpenAtCommit(path string, hash plumbing.Hash) (io.ReadCloser, error) {
 	commit, err := r.CommitObject(hash)
 	if err != nil {
-		return nil, fmt.Errorf("Commit object lookup of %v: %s", hash, err)
+		return nil, fmt.Errorf("Commit object of %v: %s", hash, err)
 	}
 
 	tree, err := commit.Tree()
 	if err != nil {
-		return nil, fmt.Errorf("Get tree of commit %v: %s", commit.TreeHash, err)
+		return nil, fmt.Errorf("Tree of commit %v: %s", commit.TreeHash, err)
 	}
 
 	entry, err := tree.FindEntry(path)
 	if err != nil {
-		return nil, fmt.Errorf("Find path in tree %s: %s", path, err)
+		return nil, fmt.Errorf("Path in tree %s: %s", path, err)
 	}
 
 	object, err := r.BlobObject(entry.Hash)
 	if err != nil {
-		return nil, fmt.Errorf("Blob object lookup of %v: %s", entry.Hash, err)
+		return nil, fmt.Errorf("Blob object of %v: %s", entry.Hash, err)
 	}
 
 	return object.Reader()
