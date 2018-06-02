@@ -33,10 +33,14 @@ func (r *Repository) FileOpenAtRef(path string, refName plumbing.ReferenceName) 
 	if err != nil {
 		return nil, fmt.Errorf("refName Lookup of %s: %s", refName, err)
 	}
+	return r.FileOpenAtCommit(path, ref.Hash())
+}
 
-	commit, err := r.CommitObject(ref.Hash())
+//FileOpenAtCommit opens a file at a given path at a given commit hash
+func (r *Repository) FileOpenAtCommit(path string, hash plumbing.Hash) (io.ReadCloser, error) {
+	commit, err := r.CommitObject(hash)
 	if err != nil {
-		return nil, fmt.Errorf("Commit object lookup of %v: %s", ref.Hash(), err)
+		return nil, fmt.Errorf("Commit object lookup of %v: %s", hash, err)
 	}
 
 	tree, err := commit.Tree()
@@ -44,18 +48,17 @@ func (r *Repository) FileOpenAtRef(path string, refName plumbing.ReferenceName) 
 		return nil, fmt.Errorf("Get tree of commit %v: %s", commit.TreeHash, err)
 	}
 
-	te, err := tree.FindEntry(path)
+	entry, err := tree.FindEntry(path)
 	if err != nil {
 		return nil, fmt.Errorf("Find path in tree %s: %s", path, err)
 	}
 
-	o, err := r.BlobObject(te.Hash)
+	object, err := r.BlobObject(entry.Hash)
 	if err != nil {
-		return nil, fmt.Errorf("Blob object lookup of %v: %s", te.Hash, err)
-
+		return nil, fmt.Errorf("Blob object lookup of %v: %s", entry.Hash, err)
 	}
 
-	return o.Reader()
+	return object.Reader()
 }
 
 // Fetch downloads the latest commits to a repository
