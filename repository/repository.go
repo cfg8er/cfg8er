@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/Masterminds/semver"
+	"github.com/cfg8er/pkg/repository/semverref"
 	git "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/storage/memory"
@@ -12,13 +14,14 @@ import (
 // Repository is an extended go-git Repository
 type Repository struct{ *git.Repository }
 
-// CloneBare downloads the repository as a bare repo
+// CloneBare downloads the repository as a bare repo including all tags
 func CloneBare(URL string) (Repository, error) {
 	// Git objects storer based on memory
 	storer := memory.NewStorage()
 
 	repo, err := git.Clone(storer, nil, &git.CloneOptions{
-		URL: URL,
+		URL:  URL,
+		Tags: git.TagMode(2),
 	})
 	if err != nil {
 		return Repository{}, err
@@ -33,11 +36,16 @@ func (r *Repository) FileOpenAtRev(path string, rev plumbing.Revision) (io.ReadC
 	if err != nil {
 		return nil, fmt.Errorf("Revision resolve of %s: %s", ref, err)
 	}
-	return r.FileOpenAtCommit(path, *ref)
+	return r.fileOpenAtHash(path, *ref)
 }
 
-// FileOpenAtCommit opens a file at a given path at a given commit hash
-func (r *Repository) FileOpenAtCommit(path string, hash plumbing.Hash) (io.ReadCloser, error) {
+// FileOpenAtRef opens a file at a given path at given reference.
+func (r *Repository) FileOpenAtRef(path string, ref plumbing.Reference) (io.ReadCloser, error) {
+	return r.fileOpenAtHash(path, ref.Hash())
+}
+
+// fileOpenAtHash opens a file at a given path at a given hash
+func (r *Repository) fileOpenAtHash(path string, hash plumbing.Hash) (io.ReadCloser, error) {
 	commit, err := r.CommitObject(hash)
 	if err != nil {
 		return nil, fmt.Errorf("Commit object of %v: %s", hash, err)
@@ -61,14 +69,30 @@ func (r *Repository) FileOpenAtCommit(path string, hash plumbing.Hash) (io.ReadC
 	return object.Reader()
 }
 
-// Fetch downloads the latest commits to a repository
-func (r *Repository) Fetch() error {
+// FindSemverTag iterates through the repository's tags looking for tags that
+// follow semantic versioning (https://semver.org). Returns the highest version
+// tag that meets the supplied contraint. Silently ignores tags that aren't
+// parsable as a semantic version.
+func (r *Repository) FindSemverTag(c *semver.Constraints) (*plumbing.Reference, error) {
+	tagsIter, err := r.Tags()
+	if err != nil {
+		return nil, err
+	}
 
-	return nil
-}
+	coll := semverref.Collection{}
 
-// Checkout makes the given reference available to the service
-func (r *Repository) Checkout(ref *plumbing.Reference) error {
+	if err := tagsIter.ForEach(func(t *plumbing.Reference) error {
+		v, err := semver.NewVersion(t.Name().Short())
+		if err != nil {
+			return nil // Ignore errors and thus tags that aren't parsable as a semver
+		}
 
-	return nil
+		// No way to a priori find the length of tagsIter so append to the collection.
+		coll = append(coll, semverref.SemverRef{Ver: v, Ref: t})
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return coll.HighestMatch(c)
 }
