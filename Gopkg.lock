@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/Masterminds/semver"
+  packages = ["."]
+  revision = "c7af12943936e8c39859482e61f0574c2fd7fc75"
+  version = "v1.4.2"
+
+[[projects]]
   name = "github.com/emirpasic/gods"
   packages = [
     "containers",
@@ -176,6 +182,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2fe55453445f5d48606b45f3fb9679585156d73284552ebdad76969ddffcc946"
+  inputs-digest = "4da4229c2bace7d8bfaee7a284735cef10bbc12b7f7882488eb7eb431e945a6e"
   solver-name = "gps-cdcl"
   solver-version = 1

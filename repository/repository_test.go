@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/Masterminds/semver"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 )
 
@@ -17,13 +18,17 @@ func TestCloneBare(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    Repository
 		wantErr bool
 	}{
 		{
 			name:    "Clone a repo",
 			args:    args{URL: exampleRepo},
 			wantErr: false,
+		},
+		{
+			name:    "Clone a non-existent repo",
+			args:    args{URL: "https://example.com/example.git"},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -99,7 +104,6 @@ func TestRepository_FileOpenAtRev(t *testing.T) {
 			if err != nil {
 				if !tt.wantErr {
 					t.Errorf("Repository.FileOpenAtRev() error = %v, wantErr %v", err, tt.wantErr)
-					return
 				}
 				return
 			}
@@ -119,11 +123,11 @@ func TestRepository_FileOpenAtRev(t *testing.T) {
 	}
 }
 
-func TestRepository_FileOpenAtCommit(t *testing.T) {
+func TestRepository_fileOpenAtHash(t *testing.T) {
 	r, err := CloneBare(exampleRepo)
 
 	if err != nil {
-		t.Errorf("Repository.FileOpenAtCommit() error = %v", err)
+		t.Errorf("Repository.fileOpenAtHash() error = %v", err)
 		return
 	}
 
@@ -140,6 +144,12 @@ func TestRepository_FileOpenAtCommit(t *testing.T) {
 		{
 			name:    "Non-existent commit hash",
 			args:    args{path: "CHANGELOG", hash: plumbing.NewHash("0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f")},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "Non-existent file path",
+			args:    args{path: "asdf/ghjk", hash: plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")},
 			want:    nil,
 			wantErr: true,
 		},
@@ -164,10 +174,10 @@ func TestRepository_FileOpenAtCommit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := r.FileOpenAtCommit(tt.args.path, tt.args.hash)
+			got, err := r.fileOpenAtHash(tt.args.path, tt.args.hash)
 			if err != nil {
 				if !tt.wantErr {
-					t.Errorf("Repository.FileOpenAtCommit() error = %v, wantErr %v", err, tt.wantErr)
+					t.Errorf("Repository.fileOpenAtHash() error = %v, wantErr %v", err, tt.wantErr)
 					return
 				}
 				return
@@ -176,14 +186,88 @@ func TestRepository_FileOpenAtCommit(t *testing.T) {
 
 			gotContents, err := ioutil.ReadAll(got)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Repository.FileOpenAtCommit() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Repository.fileOpenAtHash() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			if !bytes.Equal(gotContents, tt.want) {
-				t.Errorf("Repository.FileOpenAtCommit() = %v, want %v", gotContents, tt.want)
+				t.Errorf("Repository.fileOpenAtHash() = %v, want %v", gotContents, tt.want)
 			}
 
+		})
+	}
+}
+
+func TestRepository_FindSemverTag(t *testing.T) {
+	r, err := CloneBare("https://github.com/cfg8er/fixture.git")
+
+	if err != nil {
+		t.Errorf("Repository.FindSemverTag() error = %v", err)
+		return
+	}
+
+	zeroZeroOne, _ := semver.NewConstraint("0.0.1")
+	zeroZeroOnePatch, _ := semver.NewConstraint("~0.0.1")
+	zeroOnePatch, _ := semver.NewConstraint("~0.1")
+	oneZeroZeroPatch, _ := semver.NewConstraint("~1.0.0")
+	oneZeroOnePrePatch, _ := semver.NewConstraint("~1.0.1-0")
+	nineNineNinePatch, _ := semver.NewConstraint("~9.9.9")
+
+	tests := []struct {
+		name       string
+		constraint *semver.Constraints
+		wantHash   plumbing.Hash
+		wantErr    bool
+	}{
+		{
+			name:       "0.0.1",
+			constraint: zeroZeroOne,
+			wantHash:   plumbing.NewHash("bdbfd0ebc52195e74f4d748bed9adde12a275c75"),
+			wantErr:    false,
+		},
+		{
+			name:       "~0.0.1",
+			constraint: zeroZeroOnePatch,
+			wantHash:   plumbing.NewHash("f9beb3bc5e04eb1a33f85805e1f2c5541e6661fc"),
+			wantErr:    false,
+		},
+		{
+			name:       "~0.1",
+			constraint: zeroOnePatch,
+			wantHash:   plumbing.NewHash("48e8f899ab1cf3a3be36371f4161cfb897659c45"),
+			wantErr:    false,
+		},
+		{
+			name:       "~1.0.0",
+			constraint: oneZeroZeroPatch,
+			wantHash:   plumbing.NewHash("c204415aafecf7dd22513f3d7158d224a32763f4"),
+			wantErr:    false,
+		},
+		{
+			name:       "~1.0.0-0",
+			constraint: oneZeroOnePrePatch,
+			wantHash:   plumbing.NewHash("774270d020ae8e17836bc399f238b77cda990e77"),
+			wantErr:    false,
+		},
+		{
+			name:       "~9.9.9 non-existant version",
+			constraint: nineNineNinePatch,
+			wantHash:   plumbing.Hash{},
+			wantErr:    true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := r.FindSemverTag(tt.constraint)
+			if err != nil {
+				if !tt.wantErr {
+					t.Errorf("Repository.FindSemverTag() error = %v, wantErr %v", err, tt.wantErr)
+				}
+				return
+			}
+			if got.Hash() != tt.wantHash {
+				t.Errorf("Repository.FindSemverTag() = %v, want %v", got, tt.wantHash)
+			}
 		})
 	}
 }
