@@ -30,43 +30,48 @@ func CloneBare(URL string) (Repository, error) {
 }
 
 // FileOpenAtRev opens a file at a given path at a given Git revision, eg.
-// https://kernel.org/pub/software/scm/git/docs/gitrevisions.html
-func (r *Repository) FileOpenAtRev(path string, rev plumbing.Revision) (io.ReadCloser, error) {
+// https://kernel.org/pub/software/scm/git/docs/gitrevisions.html. Returns an
+// open io.ReadCloser, file size, and error.
+func (r *Repository) FileOpenAtRev(path string, rev plumbing.Revision) (io.ReadCloser, int64, error) {
 	ref, err := r.ResolveRevision(rev)
 	if err != nil {
-		return nil, fmt.Errorf("Revision resolve of %s: %s", ref, err)
+		return nil, 0, fmt.Errorf("Revision resolve of %s: %s", ref, err)
 	}
 	return r.fileOpenAtHash(path, *ref)
 }
 
-// FileOpenAtRef opens a file at a given path at given reference.
-func (r *Repository) FileOpenAtRef(path string, ref plumbing.Reference) (io.ReadCloser, error) {
+// FileOpenAtRef opens a file at a given path at given reference. Returns an open io.ReadCloser,
+// file size, and error.
+func (r *Repository) FileOpenAtRef(path string, ref plumbing.Reference) (io.ReadCloser, int64, error) {
 	return r.fileOpenAtHash(path, ref.Hash())
 }
 
-// fileOpenAtHash opens a file at a given path at a given hash
-func (r *Repository) fileOpenAtHash(path string, hash plumbing.Hash) (io.ReadCloser, error) {
+// fileOpenAtHash opens a file at a given path at a given hash. Returns an open io.ReadCloser,
+// file size, and error.
+func (r *Repository) fileOpenAtHash(path string, hash plumbing.Hash) (io.ReadCloser, int64, error) {
 	commit, err := r.CommitObject(hash)
 	if err != nil {
-		return nil, fmt.Errorf("Commit object of %v: %s", hash, err)
+		return nil, 0, fmt.Errorf("Commit object of %v: %s", hash, err)
 	}
 
 	tree, err := commit.Tree()
 	if err != nil {
-		return nil, fmt.Errorf("Tree of commit %v: %s", commit.TreeHash, err)
+		return nil, 0, fmt.Errorf("Tree of commit %v: %s", commit.TreeHash, err)
 	}
 
 	entry, err := tree.FindEntry(path)
 	if err != nil {
-		return nil, fmt.Errorf("Path in tree %s: %s", path, err)
+		return nil, 0, fmt.Errorf("Path in tree %s: %s", path, err)
 	}
 
 	object, err := r.BlobObject(entry.Hash)
 	if err != nil {
-		return nil, fmt.Errorf("Blob object of %v: %s", entry.Hash, err)
+		return nil, 0, fmt.Errorf("Blob object of %v: %s", entry.Hash, err)
 	}
 
-	return object.Reader()
+	reader, err := object.Reader()
+
+	return reader, object.Size, err
 }
 
 // FindSemverTag iterates through the repository's tags looking for tags that
