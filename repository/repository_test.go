@@ -51,8 +51,8 @@ func TestRepository_FileOpenAtRev(t *testing.T) {
 	}
 
 	type args struct {
-		path string
-		rev  plumbing.Revision
+		filePath string
+		rev      plumbing.Revision
 	}
 	tests := []struct {
 		name    string
@@ -62,44 +62,44 @@ func TestRepository_FileOpenAtRev(t *testing.T) {
 	}{
 		{
 			name:    "Reference not found",
-			args:    args{path: "CHANGELOG", rev: plumbing.Revision("asdf1234")},
+			args:    args{filePath: "CHANGELOG", rev: plumbing.Revision("asdf1234")},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "Open and read CHANGELOG at refs/heads/master",
-			args:    args{path: "CHANGELOG", rev: plumbing.Revision("refs/heads/master")},
+			args:    args{filePath: "CHANGELOG", rev: plumbing.Revision("refs/heads/master")},
 			want:    []byte("Initial changelog\n"),
 			wantErr: false,
 		},
 		{
 			name:    "Open and read CHANGELOG at refs/remotes/origin/branch",
-			args:    args{path: "CHANGELOG", rev: plumbing.Revision("refs/remotes/origin/branch")},
+			args:    args{filePath: "CHANGELOG", rev: plumbing.Revision("refs/remotes/origin/branch")},
 			want:    []byte("Initial changelog\n"),
 			wantErr: false,
 		},
 		{
 			name: "Open and read vendor/foo.go at refs/heads/master",
-			args: args{path: "vendor/foo.go", rev: plumbing.Revision("refs/heads/master")},
+			args: args{filePath: "vendor/foo.go", rev: plumbing.Revision("refs/heads/master")},
 			want: []byte("package main\n\nimport \"fmt\"\n\nfunc main() {\n	fmt.Println(\"Hello, playground\")\n}\n"),
 			wantErr: false,
 		},
 		{
 			name:    "Open and read CHANGELOG at 6ecf0ef2c2dffb796033e5a02219af86ec6584e5",
-			args:    args{path: "CHANGELOG", rev: plumbing.Revision("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")},
+			args:    args{filePath: "CHANGELOG", rev: plumbing.Revision("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")},
 			want:    []byte("Initial changelog\n"),
 			wantErr: false,
 		},
 		{
 			name:    "Open and read CHANGELOG at short ref master",
-			args:    args{path: "CHANGELOG", rev: plumbing.Revision("master")},
+			args:    args{filePath: "CHANGELOG", rev: plumbing.Revision("master")},
 			want:    []byte("Initial changelog\n"),
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, _, err := r.FileOpenAtRev(tt.args.path, tt.args.rev)
+			got, _, err := r.FileOpenAtRev(tt.args.filePath, tt.args.rev)
 
 			if err != nil {
 				if !tt.wantErr {
@@ -132,8 +132,8 @@ func TestRepository_fileOpenAtHash(t *testing.T) {
 	}
 
 	type args struct {
-		path string
-		hash plumbing.Hash
+		filePath string
+		hash     plumbing.Hash
 	}
 	tests := []struct {
 		name    string
@@ -143,38 +143,38 @@ func TestRepository_fileOpenAtHash(t *testing.T) {
 	}{
 		{
 			name:    "Non-existent commit hash",
-			args:    args{path: "CHANGELOG", hash: plumbing.NewHash("0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f")},
+			args:    args{filePath: "CHANGELOG", hash: plumbing.NewHash("0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f")},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "Non-existent file path",
-			args:    args{path: "asdf/ghjk", hash: plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")},
+			args:    args{filePath: "asdf/ghjk", hash: plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "Open and read CHANGELOG at 6ecf0ef2c2dffb796033e5a02219af86ec6584e5",
-			args:    args{path: "CHANGELOG", hash: plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")},
+			args:    args{filePath: "CHANGELOG", hash: plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")},
 			want:    []byte("Initial changelog\n"),
 			wantErr: false,
 		},
 		{
 			name:    "Open and read CHANGELOG at a remote branch commit e8d3ffab552895c19b9fcf7aa264d277cde33881",
-			args:    args{path: "CHANGELOG", hash: plumbing.NewHash("e8d3ffab552895c19b9fcf7aa264d277cde33881")},
+			args:    args{filePath: "CHANGELOG", hash: plumbing.NewHash("e8d3ffab552895c19b9fcf7aa264d277cde33881")},
 			want:    []byte("Initial changelog\n"),
 			wantErr: false,
 		},
 		{
 			name: "Open and read vendor/foo.go at 6ecf0ef2c2dffb796033e5a02219af86ec6584e5",
-			args: args{path: "vendor/foo.go", hash: plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")},
+			args: args{filePath: "vendor/foo.go", hash: plumbing.NewHash("6ecf0ef2c2dffb796033e5a02219af86ec6584e5")},
 			want: []byte("package main\n\nimport \"fmt\"\n\nfunc main() {\n	fmt.Println(\"Hello, playground\")\n}\n"),
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, _, err := r.fileOpenAtHash(tt.args.path, tt.args.hash)
+			got, _, err := r.fileOpenAtHash(tt.args.filePath, tt.args.hash)
 			if err != nil {
 				if !tt.wantErr {
 					t.Errorf("Repository.fileOpenAtHash() error = %v, wantErr %v", err, tt.wantErr)
