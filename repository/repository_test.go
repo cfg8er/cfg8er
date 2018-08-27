@@ -99,7 +99,7 @@ func TestRepository_FileOpenAtRev(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := r.FileOpenAtRev(tt.args.path, tt.args.rev)
+			got, _, err := r.FileOpenAtRev(tt.args.path, tt.args.rev)
 
 			if err != nil {
 				if !tt.wantErr {
@@ -174,7 +174,7 @@ func TestRepository_fileOpenAtHash(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := r.fileOpenAtHash(tt.args.path, tt.args.hash)
+			got, _, err := r.fileOpenAtHash(tt.args.path, tt.args.hash)
 			if err != nil {
 				if !tt.wantErr {
 					t.Errorf("Repository.fileOpenAtHash() error = %v, wantErr %v", err, tt.wantErr)
