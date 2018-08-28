@@ -18,7 +18,7 @@ jobs:
   clean-code:
     docker:
       - image: circleci/golang:latest
-    working_directory: /go/src/github.com/cfg8er/pkg
+    working_directory: /go/src/github.com/cfg8er/cfg8er
     steps:
       - checkout
       - run:
@@ -45,7 +45,7 @@ jobs:
   test:
     docker:
       - image: circleci/golang:latest
-    working_directory: /go/src/github.com/cfg8er/pkg
+    working_directory: /go/src/github.com/cfg8er/cfg8er
     environment:
       - CGO_ENABLED: 0
     steps:
@@ -59,7 +59,7 @@ jobs:
   race:
     docker:
       - image: circleci/golang:latest
-    working_directory: /go/src/github.com/cfg8er/pkg
+    working_directory: /go/src/github.com/cfg8er/cfg8er
     environment:
       - CGO_ENABLED: 1
     steps:
@@ -70,7 +70,7 @@ jobs:
   compile:
     docker:
       - image: circleci/golang:latest
-    working_directory: /go/src/github.com/cfg8er/pkg
+    working_directory: /go/src/github.com/cfg8er/cfg8er
     environment:
       - CGO_ENABLED: 0
     steps:
