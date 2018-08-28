@@ -18,7 +18,7 @@ jobs:
   clean-code:
     docker:
       - image: circleci/golang:latest
-    working_directory: /go/src/github.com/cfg8er/pkg
+    working_directory: /go/src/github.com/cfg8er/cfg8er
     steps:
       - checkout
       - run:
@@ -36,16 +36,15 @@ jobs:
           name: Run golint
           command: |
             go get -u github.com/golang/lint/golint
-            golint ./
-            golint ./deploy/...
-            golint ./repository/...
+            golint ./pkg/...
+            golint ./cmd/...
       - run:
           name: gofmt
-          command: test -z $(gofmt -s -l deploy repository)
+          command: test -z $(gofmt -s -l pkg cmd)
   test:
     docker:
       - image: circleci/golang:latest
-    working_directory: /go/src/github.com/cfg8er/pkg
+    working_directory: /go/src/github.com/cfg8er/cfg8er
     environment:
       - CGO_ENABLED: 0
     steps:
@@ -59,7 +58,7 @@ jobs:
   race:
     docker:
       - image: circleci/golang:latest
-    working_directory: /go/src/github.com/cfg8er/pkg
+    working_directory: /go/src/github.com/cfg8er/cfg8er
     environment:
       - CGO_ENABLED: 1
     steps:
@@ -70,7 +69,7 @@ jobs:
   compile:
     docker:
       - image: circleci/golang:latest
-    working_directory: /go/src/github.com/cfg8er/pkg
+    working_directory: /go/src/github.com/cfg8er/cfg8er
     environment:
       - CGO_ENABLED: 0
     steps:
