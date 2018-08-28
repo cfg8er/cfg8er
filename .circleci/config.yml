@@ -13,7 +13,6 @@ workflows:
       - compile:
           requires:
             - clean-code     
-
 jobs:
   clean-code:
     docker:
