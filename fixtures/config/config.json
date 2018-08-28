@@ -1,0 +1,20 @@
+{ 
+  "repositories": 
+  [
+    {
+      "name": "cfg8er-fixture",
+      "uri": "https://github.com/cfg8er/fixture.git",
+      "update_frequency": 600,
+      "enable_update_api": false,
+      "enable_semvers_tags": true,
+      "enable_tags": true,
+      "enable_commits": false,
+      "whitelist_refs": [ "v1.0.*" ],
+      "blacklist_refs": ["v0.*"],
+      "allow_hosts": ["127.0.0.1/8"],
+      "gpg_verify_commit": true,
+      "gpg_verify_tag": true,
+      "gpg_allow_ids": ["29DF880B"]
+    }
+  ]
+}

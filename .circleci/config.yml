@@ -36,12 +36,11 @@ jobs:
           name: Run golint
           command: |
             go get -u github.com/golang/lint/golint
-            golint ./
-            golint ./deploy/...
-            golint ./repository/...
+            golint ./pkg/...
+            golint ./cmd/...
       - run:
           name: gofmt
-          command: test -z $(gofmt -s -l deploy repository)
+          command: test -z $(gofmt -s -l pkg cmd)
   test:
     docker:
       - image: circleci/golang:latest
