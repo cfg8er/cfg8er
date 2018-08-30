@@ -1,6 +1,6 @@
 repositories:
-  - name: cfg8er-fixture
-    uri: https://github.com/cfg8er/fixture.git
+  cfg8er-fixture:
+    url: https://github.com/cfg8er/fixture.git
     update_frequency: 600
     enable_update_api: false
     enable_semvers_tags: true

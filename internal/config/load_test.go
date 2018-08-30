@@ -12,28 +12,27 @@ func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    Repositories
+		want    map[string]Repo
 		wantErr bool
 	}{
 		{
 			name:    "Non-existant path",
 			args:    args{filePath: "/non-existant/path"},
-			want:    Repositories{},
+			want:    map[string]Repo{},
 			wantErr: true,
 		},
 		/*{
 			name:    "Empty json config",
 			args:    args{filePath: "../../fixtures/config/empty.json"},
-			want:    Repositories{},
+			want:    map[string]Repo{},
 			wantErr: false,
 		},*/
 		{
 			name: "Load example yaml config",
 			args: args{filePath: "../../fixtures/config/config.yaml"},
-			want: Repositories{
-				{
-					Name:              "cfg8er-fixture",
-					URI:               "https://github.com/cfg8er/fixture.git",
+			want: map[string]Repo{
+				"cfg8er-fixture": {
+					URL:               "https://github.com/cfg8er/fixture.git",
 					UpdateFrequency:   600,
 					EnableUpdateAPI:   false,
 					EnableSemversTags: true,
@@ -52,10 +51,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "Load example json config",
 			args: args{filePath: "../../fixtures/config/config.json"},
-			want: Repositories{
-				{
-					Name:              "cfg8er-fixture",
-					URI:               "https://github.com/cfg8er/fixture.git",
+			want: map[string]Repo{
+				"cfg8er-fixture": {
+					URL:               "https://github.com/cfg8er/fixture.git",
 					UpdateFrequency:   600,
 					EnableUpdateAPI:   false,
 					EnableSemversTags: true,
