@@ -6,6 +6,7 @@ import (
 	"github.com/cfg8er/cfg8er/internal/config"
 	"github.com/cfg8er/cfg8er/pkg/repository"
 	"github.com/gin-gonic/gin"
+	git "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -25,7 +26,7 @@ func Run(c *cli.Context) error {
 	}
 
 	// Clone all the repos
-	if err := cloneRepos(); err != nil {
+	if err := cloneFetchRepos(); err != nil {
 		return err
 	}
 
@@ -34,7 +35,9 @@ func Run(c *cli.Context) error {
 	return router.Run(c.String("listen"))
 }
 
-func cloneRepos() error {
+// cloneFetchRepos iterates over over the repoLookup global cloning repos or fetching the latest objects
+// if the repo has already been cloned. Ignores NoErrAlreadyUpToDate error on fetch.
+func cloneFetchRepos() error {
 	for n, r := range repoLookup {
 		if r.ClonedRepo == (repository.Repository{}) {
 			fmt.Printf("Cloning repo %s, %s\n", n, r.URL)
@@ -42,9 +45,14 @@ func cloneRepos() error {
 			if err != nil {
 				return err
 			}
-
 			r.ClonedRepo = clonedRepo
 			repoLookup[n] = r
+		} else {
+			fmt.Printf("Fetch latest objects from repo %s, %s\n", n, r.URL)
+			err := r.ClonedRepo.Fetch(&git.FetchOptions{})
+			if err != nil && err != git.NoErrAlreadyUpToDate {
+				return err
+			}
 		}
 	}
 
