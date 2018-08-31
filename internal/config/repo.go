@@ -1,13 +1,11 @@
 package config
 
 import (
-	"github.com/micro/go-config"
-	"github.com/micro/go-config/source/file"
+	"github.com/cfg8er/cfg8er/pkg/repository"
 )
 
-type Repository struct {
-	Name              string
-	URI               string
+type Repo struct {
+	URL               string
 	UpdateFrequency   int      `json:"update_frequency"`
 	EnableUpdateAPI   bool     `json:"enable_update_api"`
 	EnableSemversTags bool     `json:"enable_semvers_tags"`
@@ -19,28 +17,5 @@ type Repository struct {
 	GpgVerifyCommit   bool     `json:"gpg_verify_commit"`
 	GpgVerifyTag      bool     `json:"gpg_verify_tag"`
 	GpgAllowIds       []string `json:"gpg_allow_ids"`
-}
-
-type Repositories []Repository
-
-func LoadConfig(filePath string) (Repositories, error) {
-	// Create new config
-	conf := config.NewConfig()
-
-	repos := Repositories{}
-
-	// Load file source
-	f := file.WithPath(filePath)
-	s := file.NewSource(f)
-
-	if err := conf.Load(s); err != nil {
-		return repos, err
-	}
-	defer conf.Close()
-
-	if err := conf.Get("repositories").Scan(&repos); err != nil {
-		return repos, err
-	}
-
-	return repos, nil
+	ClonedRepo        repository.Repository
 }

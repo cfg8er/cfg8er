@@ -107,3 +107,24 @@ func (r *Repository) FindSemverTag(c *semver.Constraints) (*plumbing.Reference, 
 
 	return coll.HighestMatch(c)
 }
+
+// FileOpenAtSemVer opens a file at a given path at a given sementic version matching tag or git revision.
+// If no match is found for the version or path returns nil values.
+// TODO: write test
+func (r *Repository) FileOpenAtSemVer(filePath string, version string) (io.ReadCloser, int64, error) {
+
+	var reader io.ReadCloser
+	var size int64
+	var fOpenErr error
+
+	constraint, err := semver.NewConstraint(version)
+	if err != nil || constraint == nil {
+		reader, size, fOpenErr = r.FileOpenAtRev(filePath, plumbing.Revision(version))
+	} else {
+		if ref, fOpenErr := r.FindSemverTag(constraint); fOpenErr == nil {
+			reader, size, fOpenErr = r.FileOpenAtRef(filePath, *ref)
+		}
+	}
+
+	return reader, size, fOpenErr
+}
