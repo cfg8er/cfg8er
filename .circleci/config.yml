@@ -12,63 +12,56 @@ workflows:
             - clean-code
       - compile:
           requires:
-            - clean-code     
+            - clean-code
 jobs:
   clean-code:
     docker:
       - image: circleci/golang:latest
-    working_directory: /go/src/github.com/cfg8er/cfg8er
     steps:
       - checkout
       - run:
-          name: Install dep
-          command: |
-            wget https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64
-            chmod +x ./dep-linux-amd64
+          name: Go mod verify
+          command: go mod verify
       - run:
-          name: Check vendored dependencies
-          command: ./dep-linux-amd64 status
+          name: Go mod graph
+          command: go mod graph
       - run:
           name: Run go vet
           command: go tool vet `find -name \*.go | grep -v ^./vendor`
       - run:
           name: Run golint
           command: |
-            go get -u github.com/golang/lint/golint
-            golint ./pkg/...
-            golint ./cmd/...
+            go get -u github.com/mgechev/revive
+            test -z "$(revive -exclude=vendor/... ./...)"
       - run:
           name: gofmt
-          command: test -z $(gofmt -s -l pkg cmd)
+          command: test -z "$(gofmt -s -l pkg cmd internal)"
   test:
     docker:
       - image: circleci/golang:latest
-    working_directory: /go/src/github.com/cfg8er/cfg8er
     environment:
       - CGO_ENABLED: 0
     steps:
       - checkout
       - run:
           name: Test all
-          command: go test -a -ldflags '-s' ./...
+          command: go test -mod=vendor -a -ldflags '-s' ./...
       - run:
           name: Test coverage
-          command: go test -cover ./...
+          command: go test -mod=vendor -cover ./...
   race:
     docker:
       - image: circleci/golang:latest
-    working_directory: /go/src/github.com/cfg8er/cfg8er
     environment:
       - CGO_ENABLED: 1
     steps:
       - checkout
       - run:
           name: Race detector
-          command: go test -race ./...
+          command: go test -mod=vendor -race ./...
   compile:
     docker:
       - image: circleci/golang:latest
-    working_directory: /go/src/github.com/cfg8er/cfg8er
     environment:
       - CGO_ENABLED: 0
     steps:
@@ -76,4 +69,4 @@ jobs:
       - run:
           name: build all tools
           command: |
-            go build -a -ldflags '-s' ./...
+            go build -mod=vendor -a -ldflags '-s' ./...

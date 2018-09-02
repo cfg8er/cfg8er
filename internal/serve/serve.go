@@ -12,6 +12,7 @@ import (
 
 var repoLookup map[string]config.Repo
 
+// Run is cli action for the serve sub-command. It loads the config, clones the repos on startup, and starts the go-gin based listener.
 func Run(c *cli.Context) error {
 	if !c.Bool("debug") {
 		gin.SetMode(gin.ReleaseMode)

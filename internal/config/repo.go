@@ -4,6 +4,9 @@ import (
 	"github.com/cfg8er/cfg8er/pkg/repository"
 )
 
+// Repo represents the contents of cfg8er-server configuration file
+// with the additional of tracking the cloned repo. This is the primary
+// type that is passed around the serve package.
 type Repo struct {
 	URL               string
 	UpdateFrequency   int      `json:"update_frequency"`
