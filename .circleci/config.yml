@@ -31,12 +31,12 @@ jobs:
       - run:
           name: Run golint
           command: |
-            go get -u github.com/golang/lint/golint
-            golint ./pkg/...
-            golint ./cmd/...
+            go get -u github.com/mgechev/revive
+            test -z "$(revive -exclude=vendor/... ./...)"
+            
       - run:
           name: gofmt
-          command: test -z $(gofmt -s -l pkg cmd)
+          command: test -z "$(gofmt -s -l pkg cmd internal)"
   test:
     docker:
       - image: circleci/golang:latest
@@ -46,10 +46,10 @@ jobs:
       - checkout
       - run:
           name: Test all
-          command: go test -a -ldflags '-s' ./...
+          command: go test -mod=vendor -a -ldflags '-s' ./...
       - run:
           name: Test coverage
-          command: go test -cover ./...
+          command: go test -mod=vendor -cover ./...
   race:
     docker:
       - image: circleci/golang:latest
@@ -59,7 +59,7 @@ jobs:
       - checkout
       - run:
           name: Race detector
-          command: go test -race ./...
+          command: go test -mod=vendor -race ./...
   compile:
     docker:
       - image: circleci/golang:latest
@@ -70,4 +70,4 @@ jobs:
       - run:
           name: build all tools
           command: |
-            go build -a -ldflags '-s' ./...
+            go build -mod=vendor -a -ldflags '-s' ./...
