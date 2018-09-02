@@ -33,7 +33,6 @@ jobs:
           command: |
             go get -u github.com/mgechev/revive
             test -z "$(revive -exclude=vendor/... ./...)"
-            
       - run:
           name: gofmt
           command: test -z "$(gofmt -s -l pkg cmd internal)"
