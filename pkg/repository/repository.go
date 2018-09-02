@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"path"
@@ -34,6 +35,12 @@ func CloneBare(URL string) (Repository, error) {
 // https://kernel.org/pub/software/scm/git/docs/gitrevisions.html. Returns an
 // open io.ReadCloser, file size, and error.
 func (r *Repository) FileOpenAtRev(filePath string, rev plumbing.Revision) (io.ReadCloser, int64, error) {
+	// Check if Repository is nil to avoid a panic if this function is called
+	// before repo has been cloned
+	if r.Repository == nil {
+		return nil, 0, errors.New("Repository is nil")
+	}
+
 	ref, err := r.ResolveRevision(rev)
 	if err != nil {
 		return nil, 0, fmt.Errorf("Revision resolve of %s: %s", ref, err)
@@ -50,6 +57,12 @@ func (r *Repository) FileOpenAtRef(filePath string, ref plumbing.Reference) (io.
 // fileOpenAtHash opens a file at a given path at a given hash. Returns an open io.ReadCloser,
 // file size, and error.
 func (r *Repository) fileOpenAtHash(filePath string, hash plumbing.Hash) (io.ReadCloser, int64, error) {
+	// Check if Repository is nil to avoid a panic if this function is called
+	// before repo has been cloned
+	if r.Repository == nil {
+		return nil, 0, errors.New("Repository is nil")
+	}
+
 	commit, err := r.CommitObject(hash)
 	if err != nil {
 		return nil, 0, fmt.Errorf("Commit object of %v: %s", hash, err)
@@ -85,6 +98,12 @@ func (r *Repository) fileOpenAtHash(filePath string, hash plumbing.Hash) (io.Rea
 // tag that meets the supplied contraint. Silently ignores tags that aren't
 // parsable as a semantic version.
 func (r *Repository) FindSemverTag(c *semver.Constraints) (*plumbing.Reference, error) {
+	// Check if Repository is nil to avoid a panic if this function is called
+	// before repo has been cloned
+	if r.Repository == nil {
+		return nil, errors.New("Repository is nil")
+	}
+
 	tagsIter, err := r.Tags()
 	if err != nil {
 		return nil, err
