@@ -1,5 +1,7 @@
 # Cfg8er
 
+[![CircleCI](https://circleci.com/gh/cfg8er/cfg8er.svg?style=svg)](https://circleci.com/gh/cfg8er/cfg8er)
+
 ## Goals
 
 - Service where the input configuration data is the source of truth. The input is the Git repo. No intermediate translation or storage layer.
