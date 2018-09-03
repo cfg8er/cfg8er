@@ -10,9 +10,10 @@ import (
 	"gopkg.in/urfave/cli.v1"
 )
 
-var repoLookup map[string]config.Repo
+var repoLookup map[string]*config.Repo
 
-// Run is cli action for the serve sub-command. It loads the config, clones the repos on startup, and starts the go-gin based listener.
+// Run is the cli action for the serve sub-command. It loads the config, clones
+// the repos on startup, and starts the go-gin based listener.
 func Run(c *cli.Context) error {
 	if !c.Bool("debug") {
 		gin.SetMode(gin.ReleaseMode)
@@ -27,8 +28,13 @@ func Run(c *cli.Context) error {
 	}
 
 	// Clone all the repos
-	if err := cloneFetchRepos(); err != nil {
-		return err
+	updateRepoCh := make(chan *config.Repo, 100)
+	defer close(updateRepoCh)
+
+	go cloneRepos(updateRepoCh)
+
+	for n := range repoLookup {
+		updateRepoCh <- repoLookup[n]
 	}
 
 	router := newRouter()
@@ -36,26 +42,23 @@ func Run(c *cli.Context) error {
 	return router.Run(c.String("listen"))
 }
 
-// cloneFetchRepos iterates over over the repoLookup global cloning repos or fetching the latest objects
+// cloneRepos iterates over over the repoLookup global cloning repos or fetching the latest objects
 // if the repo has already been cloned. Ignores NoErrAlreadyUpToDate error on fetch.
-func cloneFetchRepos() error {
-	for n, r := range repoLookup {
+func cloneRepos(updateRepoCh chan *config.Repo) {
+	for r := range updateRepoCh {
 		if r.ClonedRepo == (repository.Repository{}) {
-			fmt.Printf("Cloning repo %s, %s\n", n, r.URL)
+			fmt.Printf("Cloning repo %s\n", r.URL)
 			clonedRepo, err := repository.CloneBare(r.URL)
 			if err != nil {
-				return err
+				fmt.Printf("Error: Cloning repo %s: %v\n", r.URL, err)
 			}
 			r.ClonedRepo = clonedRepo
-			repoLookup[n] = r
 		} else {
-			fmt.Printf("Fetch latest objects from repo %s, %s\n", n, r.URL)
+			fmt.Printf("Fetch latest objects from repo %s\n", r.URL)
 			err := r.ClonedRepo.Fetch(&git.FetchOptions{})
 			if err != nil && err != git.NoErrAlreadyUpToDate {
-				return err
+				fmt.Printf("Error: Fetching objects from repo %s: %v\n", r.URL, err)
 			}
 		}
 	}
-
-	return nil
 }

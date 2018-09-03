@@ -6,12 +6,12 @@ import (
 )
 
 // LoadConfig opens the filePath using micro/go-config to scan it onto
-// a map[String]Repo.
-func LoadConfig(filePath string) (map[string]Repo, error) {
+// a map[String]*Repo.
+func LoadConfig(filePath string) (map[string]*Repo, error) {
 	// Create new config
 	conf := config.NewConfig()
 
-	repos := map[string]Repo{}
+	repos := map[string]*Repo{}
 
 	// Load file source
 	f := file.WithPath(filePath)

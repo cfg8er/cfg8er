@@ -12,13 +12,13 @@ func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    map[string]Repo
+		want    map[string]*Repo
 		wantErr bool
 	}{
 		{
 			name:    "Non-existant path",
 			args:    args{filePath: "/non-existant/path"},
-			want:    map[string]Repo{},
+			want:    map[string]*Repo{},
 			wantErr: true,
 		},
 		/*{
@@ -30,7 +30,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "Load example yaml config",
 			args: args{filePath: "../../fixtures/config/config.yaml"},
-			want: map[string]Repo{
+			want: map[string]*Repo{
 				"cfg8er-fixture": {
 					URL:               "https://github.com/cfg8er/fixture.git",
 					UpdateFrequency:   600,
@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "Load example json config",
 			args: args{filePath: "../../fixtures/config/config.json"},
-			want: map[string]Repo{
+			want: map[string]*Repo{
 				"cfg8er-fixture": {
 					URL:               "https://github.com/cfg8er/fixture.git",
 					UpdateFrequency:   600,
